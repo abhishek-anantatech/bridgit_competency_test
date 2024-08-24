@@ -140,12 +140,33 @@ export class BrokerApplicationsListController {
     @User() user: BrokerDto,
     @Body() body: ApplicationDto
   ): Promise<BrokerApplicationPostResponseDto> {
-    const avgLoanAmount = await this.applicationEntity.getAverageLoanAmount()
-    const loanAmount = body.loanAmount !== avgLoanAmount ? body.loanAmount : null;
-    // const application = await this.applicationEntity.create({ ...body, status: ApplicationStatus.Submitted, brokerId: user.id });
-    return {
-      success: true,
-      loanAmount
-    };
+    try {
+      // Get the average loan amount from the database
+      const avgLoanAmount = await this.applicationEntity.getAverageLoanAmount();
+      
+      console.log({
+        ...body,
+        status: ApplicationStatus.Submitted,
+        brokerId: user.id
+      });
+      // Save the new application to the database
+      const applicationId = await this.applicationEntity.createLoanApplication({
+        ...body,
+        status: ApplicationStatus.Submitted,
+        brokerId: user.id
+      });
+  
+      // Compare the new loan amount with the average
+      const isAboveAverage = body.loanAmount > avgLoanAmount;
+  
+      return {
+        success: true,
+        loanAmount: body.loanAmount,
+        isAboveAverage
+      };
+    } catch (error) {
+      console.error('Error processing application:', error);
+      throw new HttpException('InternalServerErrorException', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

@@ -5,6 +5,7 @@ import { Broker } from '../brokers/broker.entity';
 import { Exclude } from 'class-transformer';
 import { IsDate, IsEnum, IsInt, IsNumber, IsOptional } from 'class-validator';
 import { Task } from '../tasks/task.entity';
+import { CreateApplicationDto } from 'src/api/brokers/applications/list-applications/create-applications.dto';
 
 /**
  * Data model for the applications table which holds
@@ -242,13 +243,30 @@ export class Application extends Model<Application> {
   updatedAt?: Date;
 
   static async getAverageLoanAmount(): Promise<number> {
-    const result = await Application.findOne({
-      attributes: [
-        [this.sequelize.fn('AVG', this.sequelize.col('loan_amount')), 'averageLoanAmount']
-      ],
-    });
+    try {
+      const result = await Application.findOne({
+        attributes: [
+          [this.sequelize.fn('AVG', this.sequelize.col('loan_amount')), 'averageLoanAmount']
+        ],
+      });
 
-    const res = result?.get('averageLoanAmount') || 0;
-    return res as number;
+      const res = result?.get('averageLoanAmount') || 0;
+      return res as number;
+    } catch (error) {
+      console.error('Error fetching average loan amount:', error);
+      return 0;
+    }
+  }
+
+  static async createLoanApplication(application: CreateApplicationDto): Promise<Application> {
+    try {
+      // Create a new application record using the provided data
+      const createdApplication = await Application.create(application);
+      
+      // Return the newly created record
+      return createdApplication;
+    } catch (error) {
+      console.error('Error while creating loan application:', error);
+    }
   }
 }
